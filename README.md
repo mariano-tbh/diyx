@@ -23,36 +23,44 @@ function Counter({ initialCount = 0 }: { initialCount?: number }) {
   const count = state(initialCount)
   const doubled = computed(() => count.get() * 2)
 
-  return function* () {
-    const interval = setInterval(() => count.set(count.get() + 1), 1000)
+  return (
+    <>
+      {function* () {
+        const interval = setInterval(() => count.set(count.get() + 1), 1000)
 
-    yield (
-      <div>
-        <p>Count: {count}</p>       // only this text node updates on change
-        <p>Doubled: {doubled}</p>
-        <button onClick={() => count.set(0)}>Reset</button>
-      </div>
-    )
+        yield (
+          <div>
+            <p>Count: {count}</p>       // only this text node updates on change
+            <p>Doubled: {doubled}</p>
+            <button onClick={() => count.set(0)}>Reset</button>
+          </div>
+        )
 
-    return () => clearInterval(interval)  // cleanup on unmount
-  }
+        return () => clearInterval(interval)  // cleanup on unmount
+      }}
+    </>
+  )
 }
 
 // 3. Async generator — streams UI states sequentially
 function UserProfile({ userId }: { userId: string }) {
   const api = inject(ApiToken)
 
-  return stream(async function* ({ signal }) {
-    yield <p>Loading…</p>
+  return (
+    <>
+      {stream(async function* ({ signal }) {
+        yield <p>Loading…</p>
 
-    try {
-      const user = await api.getUser(userId, signal)
-      yield <UserCard name={user.name} email={user.email} />
-    } catch (err) {
-      if (signal.aborted) return
-      yield <p>Error: {(err as Error).message}</p>
-    }
-  })
+        try {
+          const user = await api.getUser(userId, signal)
+          yield <UserCard name={user.name} email={user.email} />
+        } catch (err) {
+          if (signal.aborted) return
+          yield <p>Error: {(err as Error).message}</p>
+        }
+      })}
+    </>
+  )
 }
 ```
 
