@@ -136,8 +136,13 @@ If you need to re-mount a component from outside its original render call (e.g. 
 const ctx = captureContext()   // snapshot the DI stack synchronously
 
 button.addEventListener("click", () => {
-  withContext(ctx, () => mountDescriptor(descriptor))
+  withContext(ctx, () => doSomethingInsideCapturedContext())
 })
+
+function doSomethingInsideCapturedContext() {
+  const api = inject(ApiToken)  // works because we're inside the captured context
+  // …
+}
 ```
 
 ---

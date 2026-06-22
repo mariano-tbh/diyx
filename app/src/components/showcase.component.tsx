@@ -1,4 +1,4 @@
-import { state, isDescriptor, mountDescriptor, captureContext, withContext } from "@diyx/lib";
+import { state, isDescriptor, render, captureContext, withContext } from "@diyx/lib";
 
 type ShowcaseProps = {
   title: string;
@@ -70,7 +70,7 @@ export function Showcase({ title, description, code, children }: ShowcaseProps) 
 
 function mountChild(ctx: ReturnType<typeof captureContext>, parent: Element, child: unknown): void {
   if (isDescriptor(child)) {
-    parent.appendChild(withContext(ctx, () => mountDescriptor(child)));
+    parent.appendChild(withContext(ctx, () => render(child)));
   } else if (child instanceof Node) {
     parent.appendChild(child);
   }

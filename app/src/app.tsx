@@ -1,10 +1,12 @@
 import { Counter } from "./components/counter.component";
-import { UserProfile } from "./components/user-card.component";
+import { UserProfile } from "./components/user-profile.component";
+import { UserSwitcher } from "./components/user-switcher.component";
 import { TwoWayForm } from "./components/two-way-form.component";
 import { FeedbackDialog } from "./components/feedback-dialog.component";
 import { Showcase } from "./components/showcase.component";
 import { counterCode } from "./snippets/counter.snippet";
 import { userProfileCode } from "./snippets/user-profile.snippet";
+import { userSwitcherCode } from "./snippets/user-switcher.snippet";
 import { twoWayFormCode } from "./snippets/two-way-form.snippet";
 import { feedbackCode } from "./snippets/feedback-dialog.snippet";
 
@@ -60,6 +62,14 @@ export function App() {
         code={feedbackCode}
       >
         <FeedbackDialog />
+      </Showcase>
+
+      <Showcase
+        title="captureContext — DI across deferred mounts"
+        description="inject() only works during synchronous component init. captureContext() snapshots the DI stack so withContext() can replay it later — here, on every user switch."
+        code={userSwitcherCode}
+      >
+        <UserSwitcher />
       </Showcase>
     </div>
   );

@@ -1,5 +1,7 @@
 import { withContext, type ContextMap, type Token } from './di.ts'
-import { mountDescriptor, isDescriptor } from './runtime.ts'
+import { render, isDescriptor } from './runtime.ts'
+
+export type ConfigurableContextBuilder = Omit<ContextBuilder, "build">
 
 class ContextBuilder {
   readonly #entries: [symbol, unknown][] = []
@@ -12,6 +14,10 @@ class ContextBuilder {
   build(): ContextMap {
     return new Map(this.#entries)
   }
+
+  asConfigurable(): ConfigurableContextBuilder {
+    return this
+  }
 }
 
 export type ContextProvider = {
@@ -19,7 +25,7 @@ export type ContextProvider = {
 }
 
 export function defineContext(
-  setup: (builder: ContextBuilder) => ContextBuilder
+  setup: (builder: ConfigurableContextBuilder) => ContextBuilder
 ): ContextProvider {
   const map = setup(new ContextBuilder()).build()
 
@@ -29,7 +35,7 @@ export function defineContext(
       : Array.isArray(children) ? children as unknown[] : [children]
 
     const nodes = withContext(map, () =>
-      items.map(child => isDescriptor(child) ? mountDescriptor(child) : child as Node)
+      items.map(child => isDescriptor(child) ? render(child) : child as Node)
     )
 
     const frag = document.createDocumentFragment()

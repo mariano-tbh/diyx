@@ -151,7 +151,7 @@ function runSync(mount: Mount, gen: Generator<Node, Cleanup>): void {
   clearMount(mount)
   let result = gen.next()
   while (!result.done) {
-    const node = isDescriptor(result.value as unknown) ? mountDescriptor(result.value as unknown as ComponentDescriptor) : result.value
+    const node = isDescriptor(result.value as unknown) ? render(result.value as unknown as ComponentDescriptor) : result.value
     insertIntoMount(mount, node)
     result = gen.next()
   }
@@ -167,7 +167,7 @@ async function runAsync(mount: Mount, gen: AsyncGenerator<Node, Cleanup>): Promi
     while (!result.done) {
       if (signal.aborted) return
       clearMount(mount)
-      const node = isDescriptor(result.value as unknown) ? mountDescriptor(result.value as unknown as ComponentDescriptor) : result.value
+      const node = isDescriptor(result.value as unknown) ? render(result.value as unknown as ComponentDescriptor) : result.value
       insertIntoMount(mount, node)
       result = await gen.next()
     }
@@ -181,10 +181,13 @@ async function runAsync(mount: Mount, gen: AsyncGenerator<Node, Cleanup>): Promi
 }
 
 // ---------------------------------------------------------------------------
-// mountDescriptor / mount
+// render / mount
 // ---------------------------------------------------------------------------
 
-export function mountDescriptor(desc: ComponentDescriptor): Node {
+export function render(desc: ComponentDescriptor | Node): Node {
+  if (!isDescriptor(desc)) {
+    return desc as Node
+  }
   const m = makeMount(desc.type.name || 'anon')
   const frag = document.createDocumentFragment()
   frag.appendChild(m.start)
@@ -199,7 +202,7 @@ export function mountDescriptor(desc: ComponentDescriptor): Node {
 export function mount(container: Element, child: Node): void {
   observeRemovals(container)
   container.appendChild(
-    isDescriptor(child as unknown) ? mountDescriptor(child as unknown as ComponentDescriptor) : child
+    isDescriptor(child as unknown) ? render(child as unknown as ComponentDescriptor) : child
   )
 }
 
@@ -335,7 +338,7 @@ function appendTo(parent: Node, child: RawChild): void {
   if (child == null || child === false || child === true) return
 
   if (isDescriptor(child)) {
-    parent.appendChild(mountDescriptor(child))
+    parent.appendChild(render(child))
     return
   }
 
