@@ -1,5 +1,7 @@
 # diyx
 
+**Dependency Injection Yourself**, like *DIY* and well X because JSX, get it? (sorry 😅)
+
 An experimental TypeScript UI framework built on three primitives: **generators**, **fine-grained signals**, and **dependency injection**.
 
 No virtual DOM. No compiler. No decorators. Components are plain functions.
