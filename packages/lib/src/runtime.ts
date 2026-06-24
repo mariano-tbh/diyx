@@ -1,6 +1,6 @@
-import { isSignal, isTwoWaySignal, type TwoWaySignal, type AnySignal, type MaybeSignal } from './signals/index.ts'
-import { effect } from './effect.ts'
+import { type Destroyable, Subject, BoundSignal } from './primitives/index.ts'
 import { onCleanup, runCleanup, observeRemovals } from './cleanup.ts'
+import { Watcher } from './primitives/watcher.ts'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -206,10 +206,22 @@ export function mount(container: Element, child: Node): void {
   )
 }
 
+/**
+ * Internals, do not use.
+ */
+export let $$_internals_currentComponentFrame: {
+  id: string
+  state: Set<Destroyable>
+  destroy: (() => void) | null
+  parent: typeof $$_internals_currentComponentFrame | null
+  isDestroyed: boolean
+} | null = null
+
 // ---------------------------------------------------------------------------
 // h — JSX factory
 // ---------------------------------------------------------------------------
 
+type MaybeSignal<T> = T | Subject<T>
 type RawChild = MaybeSignal<unknown> | Node | SyncUI | AsyncUI | (() => unknown) | RawChild[] | null | undefined | boolean
 
 export function h(
@@ -233,7 +245,21 @@ export function h(
       ...p,
       children: children.length === 1 ? children[0] : children,
     }
-    return { __diyx_descriptor: true as const, type: tag as ComponentFn, props: allProps } as unknown as Node
+    return {
+      __diyx_descriptor: true as const, type: (function (props) {
+        $$_internals_currentComponentFrame = {
+          id: crypto.randomUUID(),
+          state: new Set<Destroyable>(),
+          destroy() {
+            this.state.forEach((s) => s.destroy())
+            this.isDestroyed = true
+          },
+          parent: $$_internals_currentComponentFrame,
+          isDestroyed: false,
+        }
+        return tag(props)
+      }) as ComponentFn, props: allProps
+    } as unknown as Node
   }
 
   // --- HTML element ---
@@ -263,20 +289,22 @@ function applyProp(el: Element, key: string, value: unknown): void {
   }
 
   // Two-way signal — must come before isSignal since TwoWaySignal extends Signal.State
-  if (isTwoWaySignal(value)) {
-    bindTwoWay(el, key, value)
+  if ((value) instanceof BoundSignal) {
+    bindTwoWaySignalProperty(el, key, value)
     return
   }
 
   // Reactive signal attribute
-  if (isSignal(value)) {
-    bindSignalAttr(el, key, value)
+  if ((value) instanceof Subject) {
+    bindSignalAttribute(el, key, value)
     return
   }
 
   // Reactive function expression attribute: class={() => theme + '-btn'}
-  if (typeof value === 'function') {
-    const stop = effect(() => setAttr(el, key, (value as () => unknown)()))
+  if (isParamlessFunction(value)) {
+    const stop = new Watcher().watch(() => {
+      setAttr(el, key, value())
+    })
     onCleanup(el, stop)
     return
   }
@@ -285,41 +313,29 @@ function applyProp(el: Element, key: string, value: unknown): void {
   setAttr(el, key, value)
 }
 
-function bindSignalAttr(el: Element, key: string, signal: AnySignal<unknown>): void {
+function bindSignalAttribute(el: Element, key: string, signal: Subject<unknown>): void {
   // Use an Attr node as the WeakMap key so its cleanup entry is distinct from
   // the element's own cleanups and can be individually disposed.
   const attrNode = document.createAttribute(key)
-  const stop = effect(() => {
-    const val = signal.get()
+  const unsub = signal.subscribe((val) => {
     if (val === false || val == null) {
       if (el.hasAttribute(key)) el.removeAttributeNode(attrNode)
     } else {
       attrNode.value = val === true ? '' : String(val)
       if (!el.hasAttribute(key)) el.setAttributeNode(attrNode)
     }
-  })
-  onCleanup(attrNode, stop)
+  }, { hot: true })
+  onCleanup(attrNode, unsub)
   // Also register on the element so removal of the element disposes the effect.
-  onCleanup(el, stop)
+  onCleanup(el, unsub)
 }
 
-function bindTwoWay(el: Element, key: string, signal: TwoWaySignal<unknown>): void {
-  // Signal → DOM: update the DOM property whenever the signal changes.
-  // Equality guard prevents cursor-position resets on focused inputs.
-  // Reflect.get/set traverse the prototype chain, which is required for DOM
-  // properties like `value` and `checked` that live on the element prototype.
-  const stop = effect(() => {
-    const val = signal.get()
-    if (Reflect.get(el, key) !== val) Reflect.set(el, key, val)
+function bindTwoWaySignalProperty(el: Element, key: string, signal: BoundSignal<unknown>): void {
+  const unbind = signal.bind(el, {
+    get: () => Reflect.get(el, key),
+    set: (value) => Reflect.set(el, key, value),
   })
-  onCleanup(el, stop)
-
-  // DOM → Signal: sync back on each configured event.
-  const handler = () => signal.set(Reflect.get(el, key))
-  for (const event of signal.events) {
-    el.addEventListener(event, handler)
-    onCleanup(el, () => el.removeEventListener(event, handler))
-  }
+  onCleanup(el, unbind)
 }
 
 function setAttr(el: Element, key: string, value: unknown): void {
@@ -348,9 +364,9 @@ function appendTo(parent: Node, child: RawChild): void {
   }
 
   // Signal child — fine-grained text node update
-  if (isSignal(child)) {
-    const text = document.createTextNode(String((child as AnySignal<unknown>).get()))
-    const stop = effect(() => { text.data = String((child as AnySignal<unknown>).get()) })
+  if ((child) instanceof Subject) {
+    const text = document.createTextNode('')
+    const stop = child.subscribe((val) => { text.data = String(val) }, { hot: true })
     onCleanup(text, stop)
     parent.appendChild(text)
     return
@@ -369,9 +385,9 @@ function appendTo(parent: Node, child: RawChild): void {
   }
 
   // Function expression child: {() => `Hello ${name.get()}`}
-  if (typeof child === 'function') {
+  if (isParamlessFunction(child)) {
     const text = document.createTextNode('')
-    const stop = effect(() => { text.data = String((child as () => unknown)()) })
+    const stop = new Watcher().watch(() => { text.data = String(child()) })
     onCleanup(text, stop)
     parent.appendChild(text)
     return
@@ -383,4 +399,9 @@ function appendTo(parent: Node, child: RawChild): void {
   }
 
   parent.appendChild(document.createTextNode(String(child)))
+}
+
+
+function isParamlessFunction(fn: unknown): fn is () => unknown {
+  return typeof fn === 'function' && fn.length === 0
 }

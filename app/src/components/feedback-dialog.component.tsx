@@ -1,4 +1,4 @@
-import { twoWaySignal, stream } from "@diyx/lib";
+import { bound, stream } from "@diyx/lib";
 
 export function FeedbackDialog() {
   return (
@@ -13,7 +13,7 @@ export function FeedbackDialog() {
           once: true,
         });
 
-        const feedback = twoWaySignal("", { event: "input" });
+        const feedback = bound("", { events: "input" });
 
         yield (
           <div class="flex flex-col gap-3 max-w-xs">

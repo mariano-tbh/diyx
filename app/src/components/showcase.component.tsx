@@ -19,12 +19,12 @@ export function Showcase({ title, description, code, children }: ShowcaseProps) 
 
   function doMount() {
     mountChild(ctx, preview, children);
-    isMounted.set(true);
+    isMounted.value = true;
   }
 
   function doUnmount() {
     while (preview.firstChild) preview.removeChild(preview.firstChild);
-    isMounted.set(false);
+    isMounted.value = false;
   }
 
   function doRerender() {
@@ -45,9 +45,9 @@ export function Showcase({ title, description, code, children }: ShowcaseProps) 
       <div class="flex items-center gap-2 px-6 py-3 border-t border-slate-800">
         <button
           class="rounded-md px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-100 transition-colors"
-          onClick={() => (isMounted.get() ? doUnmount() : doMount())}
+          onClick={() => (isMounted.value ? doUnmount() : doMount())}
         >
-          {() => (isMounted.get() ? "Unmount" : "Remount")}
+          {() => (isMounted.value ? "Unmount" : "Remount")}
         </button>
         <button
           class="rounded-md px-3 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-100 transition-colors"

@@ -1,22 +1,22 @@
-import { computed, twoWaySignal } from "@diyx/lib";
+import { computed, bound } from "@diyx/lib";
 
 export function TwoWayForm() {
-  const username = twoWaySignal("");
-  const bio = twoWaySignal("", { event: "input" });
-  const email = twoWaySignal("", { event: ["change", "blur"] });
-  const agreed = twoWaySignal(false);
+  const username = bound("");
+  const bio = bound("", { events: "input" });
+  const email = bound("", { events: ["change", "blur"] });
+  const agreed = bound(false);
 
   const summary = computed(() =>
-    agreed.get()
-      ? `${username.get()} <${email.get()}> agreed to the terms.`
+    agreed.value
+      ? `${username.value} <${email.value}> agreed to the terms.`
       : "Not agreed yet.",
   );
 
   function reset() {
-    username.set("");
-    bio.set("");
-    email.set("");
-    agreed.set(false);
+    username.value = "";
+    bio.value = "";
+    email.value = "";
+    agreed.value = false;
   }
 
   const inputClass =
@@ -24,15 +24,30 @@ export function TwoWayForm() {
   const labelClass = "block text-xs text-slate-500 mb-1";
 
   return (
-    <form class="flex flex-col gap-4 max-w-sm" onSubmit={(e: SubmitEvent) => e.preventDefault()}>
+    <form
+      class="flex flex-col gap-4 max-w-sm"
+      onSubmit={(e: SubmitEvent) => e.preventDefault()}
+    >
       <div>
-        <label class={labelClass}>Username — updates on change (blur / Enter)</label>
-        <input class={inputClass} type="text" value={username} placeholder="your name" />
+        <label class={labelClass}>
+          Username — updates on change (blur / Enter)
+        </label>
+        <input
+          class={inputClass}
+          type="text"
+          value={username}
+          placeholder="your name"
+        />
       </div>
 
       <div>
         <label class={labelClass}>Bio — updates on every keystroke</label>
-        <input class={inputClass} type="text" value={bio} placeholder="tell us about yourself" />
+        <input
+          class={inputClass}
+          type="text"
+          value={bio}
+          placeholder="tell us about yourself"
+        />
         <p class="mt-1 text-xs text-slate-500">
           Live: <span class="text-slate-300">{bio}</span>
         </p>
@@ -40,12 +55,17 @@ export function TwoWayForm() {
 
       <div>
         <label class={labelClass}>Email — change + blur</label>
-        <input class={inputClass} type="email" value={email} placeholder="you@example.com" />
+        <input
+          class={inputClass}
+          type="email"
+          value={email}
+          placeholder="you@example.com"
+        />
       </div>
 
       <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-        <input type="checkbox" checked={agreed} class="accent-indigo-500" />
-        I agree to the terms
+        <input type="checkbox" checked={agreed} class="accent-indigo-500" />I
+        agree to the terms
       </label>
 
       <p class="text-xs text-slate-400 italic">{summary}</p>

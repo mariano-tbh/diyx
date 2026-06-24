@@ -33,7 +33,7 @@ declare namespace JSX {
   }
 
   // MaybeSig<T>: accept a raw value or any signal-like object that has .get()
-  type MaybeSig<T> = T | { get(): T }
+  type MaybeSig<T> = T | Subject<T>
 
   interface HTMLAttributes {
     class?: MaybeSig<string>
