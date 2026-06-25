@@ -65,8 +65,8 @@ export function App() {
       </Showcase>
 
       <Showcase
-        title="captureContext — DI across deferred mounts"
-        description="inject() only works during synchronous component init. captureContext() snapshots the DI stack so withContext() can replay it later — here, on every user switch."
+        title="snapContext — DI across deferred mounts"
+        description="inject() only works during synchronous component init. snapContext() snapshots the DI stack so withContext() can replay it later — here, on every user switch."
         code={userSwitcherCode}
       >
         <UserSwitcher />

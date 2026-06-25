@@ -204,7 +204,7 @@ function App() {
 If you need to re-mount a component from outside its original render call (e.g. from an event handler), capture the context first:
 
 ```ts
-const ctx = captureContext()   // snapshot the DI stack synchronously
+const ctx = snapContext()   // snapshot the DI stack synchronously
 
 button.addEventListener("click", () => {
   withContext(ctx, () => doSomethingInsideCapturedContext())
@@ -238,7 +238,7 @@ diyx/
           bind.ts             bind() — component-scoped BoundSignal factory
           watch.ts            watch() — component-scoped Watcher factory
         cleanup.ts      WeakMap cleanup registry + MutationObserver fallback
-        di.ts           defineToken(), inject(), withContext(), captureContext()
+        di.ts           defineToken(), inject(), withContext(), snapContext()
         context.ts      defineContext() — scoped DI provider with dep graph + async build()
         runtime.ts      h(), Fragment, stream(), mount()
         types.d.ts      JSX namespace, global h/Fragment
@@ -274,7 +274,7 @@ diyx/
 | `stream()` type helper for async generator children | ✅ |
 | `inject()` / `withContext()` DI | ✅ |
 | `defineContext()` scoped provider with topo-sorted dep graph, cycle detection, async factories | ✅ |
-| `captureContext()` for deferred remounts | ✅ |
+| `snapContext()` for deferred remounts | ✅ |
 | `WeakMap` cleanup registry + `MutationObserver` fallback | ✅ |
 | Generator cleanup via `return () => void` | ✅ |
 | Showcase app with unmount/remount/rerender per component | ✅ |
@@ -286,7 +286,7 @@ diyx/
 
 - **Signals before `await`** — signal reads after an `await` inside an async generator are not tracked. Read all reactive values in the synchronous segment before the first `await`.
 - **Full re-mount on prop change** — when a parent passes new props, the component is torn down and re-initialised from scratch. Fine-grained signal updates happen without re-mounting.
-- **`inject()` is synchronous** — it reads from a call-stack-based context. It must be called before any `yield` or `await`. Use `captureContext()` + `withContext()` to carry the context into deferred callbacks.
+- **`inject()` is synchronous** — it reads from a call-stack-based context. It must be called before any `yield` or `await`. Use `snapContext()` + `withContext()` to carry the context into deferred callbacks.
 - **No compile step** — reactivity is detected at runtime via `instanceof Subject`. An ESLint plugin handles misuse warnings instead of a Babel/Vite transform.
 
 ---

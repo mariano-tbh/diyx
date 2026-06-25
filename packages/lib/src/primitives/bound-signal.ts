@@ -18,7 +18,6 @@ export class BoundSignal<T> extends StatefulSignal<T> {
     this.#events = Array.isArray(events) ? events : [events]
   }
 
-
   bind(target: EventTarget, accessors: Accessors<T>): () => void {
     const callbacks: Set<() => void> = new Set()
 

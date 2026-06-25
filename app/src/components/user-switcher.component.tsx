@@ -1,4 +1,4 @@
-import { captureContext, withContext, render, inject } from "@diyx/lib";
+import { snapContext, withContext, render, inject } from "@diyx/lib";
 import { UsersService } from "../tokens/users-service.token";
 import { UserCard } from "./user-card.component";
 
@@ -7,7 +7,7 @@ const USER_IDS = ["1", "2", "3"];
 export function UserSwitcher() {
   // Capture the DI context synchronously — inject() inside UserProfile
   // needs it, even when we remount from a button click handler.
-  const ctx = captureContext();
+  const ctx = snapContext();
   const slot = document.createElement("div");
   let index = 0;
 

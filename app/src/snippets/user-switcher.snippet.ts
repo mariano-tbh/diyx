@@ -2,7 +2,7 @@ export const userSwitcherCode = `\
 export function UserSwitcher() {
   // Capture the DI context synchronously — inject() inside UserProfile
   // needs it, even when we remount from a button click handler.
-  const ctx = captureContext();
+  const ctx = snapContext();
   const slot = document.createElement("div");
   let index = 0;
 

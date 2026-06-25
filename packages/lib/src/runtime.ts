@@ -290,7 +290,7 @@ function applyProp(el: Element, key: string, value: unknown): void {
 
   // Two-way signal — must come before isSignal since TwoWaySignal extends Signal.State
   if ((value) instanceof BoundSignal) {
-    bindTwoWaySignalProperty(el, key, value)
+    bindBoundSignalToProperty(el, key, value)
     return
   }
 
@@ -330,7 +330,7 @@ function bindSignalAttribute(el: Element, key: string, signal: Subject<unknown>)
   onCleanup(el, unsub)
 }
 
-function bindTwoWaySignalProperty(el: Element, key: string, signal: BoundSignal<unknown>): void {
+function bindBoundSignalToProperty(el: Element, key: string, signal: BoundSignal<unknown>): void {
   const unbind = signal.bind(el, {
     get: () => Reflect.get(el, key),
     set: (value) => Reflect.set(el, key, value),

@@ -51,4 +51,36 @@ describe(BoundSignal.name, () => {
     target.dispatchEvent(new Event("change"));
     expect(signal.value).toBe("another change");
   })
+
+  test("supports multiple targets", () => {
+    const targetA = new TestTarget();
+    const targetB = new TestTarget();
+    const signal = new BoundSignal<string>("initial", { events: ["input", "change"] });
+
+    signal.bind(targetA, {
+      get: () => targetA.value,
+      set: (value) => {
+        targetA.value = value;
+      },
+    });
+    signal.bind(targetB, {
+      get: () => targetB.value,
+      set: (value) => {
+        targetB.value = value;
+      },
+    });
+
+    expect(targetA.value).toBe("initial");
+    expect(targetB.value).toBe("initial");
+
+    targetA.value = "changed";
+    targetA.dispatchEvent(new Event("input"));
+    expect(signal.value).toBe("changed");
+    expect(targetB.value).toBe("changed");
+
+    targetB.value = "another change";
+    targetB.dispatchEvent(new Event("change"));
+    expect(signal.value).toBe("another change");
+    expect(targetA.value).toBe("another change");
+  })
 })

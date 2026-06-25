@@ -1,4 +1,4 @@
-import { state, isDescriptor, render, captureContext, withContext } from "@diyx/lib";
+import { state, isDescriptor, render, snapContext, withContext } from "@diyx/lib";
 
 type ShowcaseProps = {
   title: string;
@@ -11,7 +11,7 @@ export function Showcase({ title, description, code, children }: ShowcaseProps) 
   const isMounted = state(true);
   // Capture the DI context stack synchronously while we're still inside it,
   // so doMount() can replay it from an event handler (outside withContext).
-  const ctx = captureContext();
+  const ctx = snapContext();
   const preview = document.createElement("div");
   preview.className = "min-h-16";
 
@@ -68,7 +68,7 @@ export function Showcase({ title, description, code, children }: ShowcaseProps) 
   );
 };
 
-function mountChild(ctx: ReturnType<typeof captureContext>, parent: Element, child: unknown): void {
+function mountChild(ctx: ReturnType<typeof snapContext>, parent: Element, child: unknown): void {
   if (isDescriptor(child)) {
     parent.appendChild(withContext(ctx, () => render(child)));
   } else if (child instanceof Node) {

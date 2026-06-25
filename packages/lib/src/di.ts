@@ -52,7 +52,7 @@ export function withContext<T>(ctx: ContextMap, fn: () => T): T {
  * capture the context for later re-use (e.g. when remounting a component
  * from an event handler, outside the original withContext call).
  */
-export function captureContext(): ContextMap {
+export function snapContext(): ContextMap {
   const merged = new Map<symbol, unknown>()
   for (const ctx of stack) {
     for (const [key, val] of ctx) merged.set(key, val)
