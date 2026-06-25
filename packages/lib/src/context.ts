@@ -55,8 +55,8 @@ class ContextBuilder {
     return new TokenBinder(token, entry => this.#entries.push(entry), this)
   }
 
-  async build(opts?: { signal?: AbortSignal }): Promise<ContextProvider> {
-    const { signal } = opts ?? {}
+  async build(opts?: { abortSignal?: AbortSignal }): Promise<ContextProvider> {
+    const { abortSignal } = opts ?? {}
     const entries = this.#entries
 
     // Validate: all inject tokens must be registered in this context
@@ -83,7 +83,7 @@ class ContextBuilder {
         resolved.set(token.key, descriptor.value)
       } else {
         const deps = (descriptor.inject ?? []) as readonly Token<unknown>[]
-        const args = [...deps.map(dep => resolved.get(dep.key)), signal]
+        const args = [...deps.map(dep => resolved.get(dep.key)), abortSignal]
         const value = await (descriptor.factory as (...a: unknown[]) => unknown)(...args)
         resolved.set(token.key, value)
       }
@@ -149,7 +149,7 @@ export type ContextProvider = {
 }
 
 export type BuiltContext = {
-  build(opts?: { signal?: AbortSignal }): Promise<ContextProvider>
+  build(opts?: { abortSignal?: AbortSignal }): Promise<ContextProvider>
 }
 
 export function defineContext(

@@ -60,7 +60,7 @@ describe('defineContext', () => {
 
       const ctx = defineContext(b => b.for(Token).use({ factory }))
 
-      await ctx.build({ signal: controller.signal })
+      await ctx.build({ abortSignal: controller.signal })
 
       expect(factory).toHaveBeenCalledWith(controller.signal)
     })

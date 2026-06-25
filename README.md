@@ -192,7 +192,7 @@ function App() {
   return (
     <>{stream(async function* ({ signal }) {
       yield <Spinner text="Loading…" />
-      const ctx = await appContext.build({ signal })
+      const ctx = await appContext.build({ abortSignal: signal })
       yield <ctx.provide><RestOfApp /></ctx.provide>
     })}</>
   )
