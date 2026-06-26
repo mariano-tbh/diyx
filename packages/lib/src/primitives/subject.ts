@@ -1,4 +1,4 @@
-import { Destroyable } from "./destroyable"
+import { Destroyable } from './destroyable'
 
 export type Subscription<T> = (value: T) => void
 export type Unsubscribe = () => void
@@ -32,7 +32,7 @@ export class Subject<T = unknown> extends Destroyable {
 
     this.#lastValue = value
 
-    for (const sub of this.#subs) {
+    for (const sub of [...this.#subs]) {
       sub(value)
     }
   }

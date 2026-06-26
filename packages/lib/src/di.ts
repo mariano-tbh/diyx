@@ -12,7 +12,7 @@ export interface Token<T> {
 export type InferToken<T extends Token<unknown>> = T extends Token<infer U> ? U : never
 
 export function defineToken<T>(description: string): Token<T> {
-  return { [brand]: undefined as unknown as T, key: Symbol(description), description }
+  return { [brand]: null! as T, key: Symbol(description), description }
 }
 
 // ---------------------------------------------------------------------------

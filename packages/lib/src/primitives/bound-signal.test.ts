@@ -52,6 +52,43 @@ describe(BoundSignal.name, () => {
     expect(signal.value).toBe("another change");
   })
 
+  test("unbind() stops the signal from pushing values to the DOM element (#2)", () => {
+    const target = new TestTarget();
+    const signal = new BoundSignal<string>("initial", { events: "input" });
+
+    const unbind = signal.bind(target, {
+      get: () => target.value,
+      set: (value) => { target.value = value },
+    });
+
+    expect(target.value).toBe("initial");
+    signal.value = "updated";
+    expect(target.value).toBe("updated");
+
+    unbind();
+
+    signal.value = "after-unbind";
+    // The signal→DOM subscription must be gone; target should NOT update.
+    expect(target.value).toBe("updated");
+  })
+
+  test("unbind() removes DOM event listeners so the signal is no longer updated", () => {
+    const target = new TestTarget();
+    const signal = new BoundSignal<string>("initial", { events: "input" });
+
+    const unbind = signal.bind(target, {
+      get: () => target.value,
+      set: (value) => { target.value = value },
+    });
+
+    unbind();
+
+    target.value = "dom-change";
+    target.dispatchEvent(new Event("input"));
+    // Event listener removed — signal must not reflect the DOM change.
+    expect(signal.value).toBe("initial");
+  })
+
   test("supports multiple targets", () => {
     const targetA = new TestTarget();
     const targetB = new TestTarget();

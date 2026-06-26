@@ -1,5 +1,5 @@
 import { type Destroyable, Subject, BoundSignal } from './primitives/index.ts'
-import { onCleanup, runCleanup, observeRemovals } from './cleanup.ts'
+import { onCleanup, runCleanup, observeRemovals, markManagedRemoval } from './cleanup.ts'
 import { Watcher } from './primitives/watcher.ts'
 
 // ---------------------------------------------------------------------------
@@ -114,6 +114,9 @@ function clearMount(mount: Mount): void {
   let node = mount.start.nextSibling
   while (node && node !== mount.end) {
     const next = node.nextSibling
+    // Mark before runCleanup so the MutationObserver skips the subsequent
+    // removeChild — cleanup has already run and should not fire a second time.
+    markManagedRemoval(node)
     runCleanup(node)
     node.parentNode?.removeChild(node)
     node = next
@@ -192,27 +195,47 @@ export function render(desc: ComponentDescriptor | Node): Node {
   const frag = document.createDocumentFragment()
   frag.appendChild(m.start)
   frag.appendChild(m.end)
+
+  // desc.type is the wrapper fn created in h() which sets
+  // $$_internals_currentComponentFrame before calling the real component fn.
   const ui = desc.type(desc.props)
+
+  // Capture the frame that was set during component init, then restore the
+  // parent so that sibling components initialised later see the correct frame.
+  const frame = $$_internals_currentComponentFrame
+  $$_internals_currentComponentFrame = frame?.parent ?? null
+
   runUI(m, ui)
-  onCleanup(m.start, () => m.controller.abort())
+
+  onCleanup(m.start, () => {
+    m.controller.abort()
+    frame?.destroy() // tear down all signals / effects registered by operators
+  })
   return frag
 }
 
 /** Top-level entry point. Replaces root.appendChild(<App />). */
-export function mount(container: Element, child: Node): void {
-  observeRemovals(container)
+export function mount(container: Element, child: Node): () => void {
+  const stopObserving = observeRemovals(container)
   container.appendChild(
     isDescriptor(child as unknown) ? render(child as unknown as ComponentDescriptor) : child
   )
+  onCleanup(container, stopObserving)
+  return () => {
+    runCleanup(container)
+    stopObserving()
+    while (container.firstChild) {
+      container.removeChild(container.firstChild)
+    }
+  }
 }
 
 /**
  * Internals, do not use.
  */
 export let $$_internals_currentComponentFrame: {
-  id: string
   state: Set<Destroyable>
-  destroy: (() => void) | null
+  destroy: () => void
   parent: typeof $$_internals_currentComponentFrame | null
   isDestroyed: boolean
 } | null = null
@@ -230,7 +253,10 @@ export function h(
   ...rawChildren: RawChild[]
 ): Node {
   const p = props ?? {}
-  const children = rawChildren.flat(Infinity) as RawChild[]
+  // Avoid allocating a new array when there is no nesting — the common case.
+  const children = rawChildren.some(Array.isArray)
+    ? (rawChildren.flat(Infinity) as RawChild[])
+    : rawChildren
 
   // --- Fragment ---
   if (tag === Fragment) {
@@ -239,16 +265,18 @@ export function h(
     return frag
   }
 
-  // --- Component function — return a lazy descriptor; mounted by mountDescriptor() ---
+  // --- Component function — return a lazy descriptor; mounted by render() ---
   if (typeof tag === 'function') {
     const allProps: Record<string, unknown> = {
       ...p,
       children: children.length === 1 ? children[0] : children,
     }
     return {
-      __diyx_descriptor: true as const, type: (function (props) {
+      __diyx_descriptor: true as const,
+      type: (function (props) {
+        // Set up a fresh frame for this component. render() will capture it
+        // and restore the parent frame after the component fn returns.
         $$_internals_currentComponentFrame = {
-          id: crypto.randomUUID(),
           state: new Set<Destroyable>(),
           destroy() {
             this.state.forEach((s) => s.destroy())
@@ -258,7 +286,8 @@ export function h(
           isDestroyed: false,
         }
         return tag(props)
-      }) as ComponentFn, props: allProps
+      }) as ComponentFn,
+      props: allProps,
     } as unknown as Node
   }
 
@@ -302,7 +331,8 @@ function applyProp(el: Element, key: string, value: unknown): void {
 
   // Reactive function expression attribute: class={() => theme + '-btn'}
   if (isParamlessFunction(value)) {
-    const stop = new Watcher().watch(() => {
+    const w = new Watcher()
+    const stop = w.watch(() => {
       setAttr(el, key, value())
     })
     onCleanup(el, stop)
@@ -387,7 +417,8 @@ function appendTo(parent: Node, child: RawChild): void {
   // Function expression child: {() => `Hello ${name.get()}`}
   if (isParamlessFunction(child)) {
     const text = document.createTextNode('')
-    const stop = new Watcher().watch(() => { text.data = String(child()) })
+    const w = new Watcher()
+    const stop = w.watch(() => { text.data = String(child()) })
     onCleanup(text, stop)
     parent.appendChild(text)
     return

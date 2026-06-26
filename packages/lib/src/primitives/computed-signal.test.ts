@@ -24,4 +24,37 @@ describe(ComputedSignal.name, () => {
 
     expect(subscriber).toHaveBeenCalledWith(7);
   })
+
+  test('does not publish after being destroyed (#5)', async () => {
+    const source = new StatefulSignal(0)
+    const computed = new ComputedSignal(() => source.value * 2)
+
+    const subscriber = vi.fn()
+    computed.subscribe(subscriber)
+    subscriber.mockClear()
+
+    computed.destroy()
+
+    source.value = 5
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(subscriber).not.toHaveBeenCalled()
+  })
+
+  test('stops tracking after being destroyed — scheduler callback is removed', async () => {
+    const source = new StatefulSignal(0)
+    const computed = new ComputedSignal(() => source.value)
+    const subscriber = vi.fn()
+    computed.subscribe(subscriber)
+    subscriber.mockClear()
+
+    computed.destroy()
+
+    // Multiple signal changes should produce zero callbacks
+    source.value = 1
+    source.value = 2
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(subscriber).not.toHaveBeenCalled()
+  })
 })

@@ -1,14 +1,15 @@
-export class Destroyable extends EventTarget {
-  #isDestroyed = false
+export type OnDestroy = () => void
 
-  protected constructor() {
-    super()
-  }
+export class Destroyable {
+  #isDestroyed = false
+  readonly #callbacks: Set<OnDestroy> = new Set()
+
+  protected constructor() {}
 
   static from(callback: () => void): Destroyable {
-    const destroyable = new Destroyable()
-    destroyable.onDestroy(callback)
-    return destroyable
+    const d = new Destroyable()
+    d.onDestroy(callback)
+    return d
   }
 
   get isDestroyed(): boolean {
@@ -16,15 +17,17 @@ export class Destroyable extends EventTarget {
   }
 
   destroy(): void {
+    if (this.#isDestroyed) return
     this.#isDestroyed = true
-    this.dispatchEvent(new Event("destroy"))
+    for (const cb of this.#callbacks) cb()
+    this.#callbacks.clear()
   }
 
   onDestroy(callback: () => void): void {
     if (this.#isDestroyed) {
       callback()
     } else {
-      this.addEventListener("destroy", callback, { once: true })
+      this.#callbacks.add(callback)
     }
   }
 }
