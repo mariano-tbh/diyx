@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "lib": ["ES2025", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@diyx/benchmarks",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "bench": "vitest bench --run",
+    "report": "vitest bench --run && node scripts/report.mjs"
+  },
+  "dependencies": {
+    "@diyx/lib": "*",
+    "happy-dom": "^18.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^4.0.0"
+  }
+}

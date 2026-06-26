@@ -4,3 +4,4 @@ dist/
 *.tsbuildinfo
 .claude/settings.local.json
 diyx.md
+benchmark-results.json
